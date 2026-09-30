@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>福彩3D在线缩水工具</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --tg-bg: var(--tg-theme-bg-color, #ffffff);
+      --tg-text: var(--tg-theme-text-color, #000000);
+      --tg-hint: var(--tg-theme-hint-color, #999999);
+      --tg-button: var(--tg-theme-button-color, #2481cc);
+      --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+      --tg-secondary: var(--tg-theme-secondary-bg-color, #f0f0f0);
+      --accent: #e74c3c;
+      --success: #27ae60;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--tg-bg);
+      color: var(--tg-text);
+      font-size: 14px;
+      line-height: 1.4;
+      padding-bottom: 80px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a5276, #2980b9);
+      color: #fff;
+      padding: 12px 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header p { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    .section {
+      margin: 10px 12px;
+      background: var(--tg-secondary);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .section-title {
+      background: rgba(0,0,0,0.05);
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-title .arrow { transition: transform 0.2s; font-size: 12px; }
+    .section-title.collapsed .arrow { transform: rotate(-90deg); }
+    .section-body { padding: 12px 14px; }
+    .section-body.hidden { display: none; }
+    .row { margin-bottom: 12px; }
+    .row:last-child { margin-bottom: 0; }
+    .label {
+      font-size: 13px;
+      color: var(--tg-hint);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .label strong { color: var(--tg-text); }
+    .digits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .digit {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1.5px solid #ccc;
+      background: #fff;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .digit.selected {
+      background: var(--tg-button);
+      border-color: var(--tg-button);
+      color: var(--tg-button-text);
+    }
+    .digit.kill {
+      background: #e74c3c;
+      border-color: #c0392b;
+      color: #fff;
+    }
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 6px 0;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      text-align: center;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mode-btn.active {
+      background: var(--tg-button);
+      border-color: var(--tg-button);
+      color: #fff;
+    }
+    .dan-group {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    .dan-group .group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    select, input[type="number"], input[type="text"] {
+      padding: 6px 10px;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+      color: #333;
+      max-width: 100%;
+    }
+    .flex-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .checkbox-item input { width: 16px; height: 16px; }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      padding: 12px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--tg-bg);
+      border-top: 1px solid #ddd;
+      z-index: 99;
+    }
+    .btn {
+      flex: 1;
+      padding: 12px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--tg-button);
+      color: var(--tg-button-text);
+    }
+    .btn-secondary {
+      background: #95a5a6;
+      color: #fff;
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+    }
+    .result-box {
+      margin: 12px;
+      background: var(--tg-secondary);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .result-box h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-stats {
+      font-size: 13px;
+      color: var(--tg-hint);
+      margin-bottom: 10px;
+    }
+    .result-nums {
+      max-height: 280px;
+      overflow-y: auto;
+      word-break: break-all;
+      font-family: "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      background: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .result-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .result-actions button {
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--tg-hint);
+      margin-top: 4px;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #ddd;
+      margin-bottom: 12px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--tg-hint);
+    }
+    .tab.active {
+      color: var(--tg-button);
+      border-bottom: 2px solid var(--tg-button);
+      margin-bottom: -2px;
+    }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>福彩3D 在线缩水</h1>
+    <p>定位 · 胆码 · 大小单双 · 和值 · 跨度 · 更多条件</p>
+  </div>
+
+  <!-- 定位 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>定位（百位 / 十位 / 个位）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>百位</strong></span>
+        <div class="digits" id="pos-bai" data-pos="0"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>十位</strong></span>
+        <div class="digits" id="pos-shi" data-pos="1"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>个位</strong></span>
+        <div class="digits" id="pos-ge" data-pos="2"></div>
+      </div>
+      <p class="hint">不选表示该位不限制</p>
+    </div>
+  </div>
+
+  <!-- 胆码 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>胆码（不定位必出）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div id="dan-groups"></div>
+      <button class="btn btn-secondary" style="width:100%;padding:8px;margin-top:4px;" onclick="addDanGroup()">+ 添加胆组</button>
+      <p class="hint">胆码：认为必出的数字（不定位）。出现次数表示该组中至少出现几个不同胆码。</p>
+    </div>
+  </div>
+
+  <!-- 大小单双质合 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>大小 · 单双 · 质合</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>大小</strong>（56789大 / 01234小）</span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="dx" value="大"> 大</label>
+          <label class="checkbox-item"><input type="checkbox" name="dx" value="小"> 小</label>
+        </div>
+        <div class="flex-row" style="margin-top:6px;">
+          <span class="label" style="margin:0;">出现个数：</span>
+          <select id="dx-count">
+            <option value="">不限</option>
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>单双</strong>（13579单 / 02468双）</span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="ds" value="单"> 单</label>
+          <label class="checkbox-item"><input type="checkbox" name="ds" value="双"> 双</label>
+        </div>
+        <div class="flex-row" style="margin-top:6px;">
+          <span class="label" style="margin:0;">出现个数：</span>
+          <select id="ds-count">
+            <option value="">不限</option>
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>质合</strong>（12357质 / 04689合）</span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="zh" value="质"> 质</label>
+          <label class="checkbox-item"><input type="checkbox" name="zh" value="合"> 合</label>
+        </div>
+        <div class="flex-row" style="margin-top:6px;">
+          <span class="label" style="margin:0;">出现个数：</span>
+          <select id="zh-count">
+            <option value="">不限</option>
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 和值 & 跨度 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>和值 · 和尾 · 跨度</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>和值</strong>（0～27）</span>
+        <div class="digits" id="hezhi"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>和值尾</strong>（0～9）</span>
+        <div class="digits" id="hezhi-wei"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>跨度</strong>（最大-最小，0～9）</span>
+        <div class="digits" id="kuadu"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 连号 · 成对 · 012路 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>连号 · 成对 · 012路 · 大中小</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>连号</strong></span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="lianhao" value="0"> 无连</label>
+          <label class="checkbox-item"><input type="checkbox" name="lianhao" value="2"> 二连</label>
+          <label class="checkbox-item"><input type="checkbox" name="lianhao" value="3"> 三连</label>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>成对</strong></span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="chengdui" value="0"> 无对（组六）</label>
+          <label class="checkbox-item"><input type="checkbox" name="chengdui" value="1"> 有对（组三）</label>
+          <label class="checkbox-item"><input type="checkbox" name="chengdui" value="2"> 豹子</label>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>012路</strong>（余0:0369 / 余1:147 / 余2:258）</span>
+        <div class="digits" id="lu012"></div>
+        <div class="flex-row" style="margin-top:6px;">
+          <span class="label" style="margin:0;">出现个数：</span>
+          <select id="lu012-count">
+            <option value="">不限</option>
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>大中小</strong>（789大 / 3456中 / 012小）</span>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="dzx" value="大"> 大</label>
+          <label class="checkbox-item"><input type="checkbox" name="dzx" value="中"> 中</label>
+          <label class="checkbox-item"><input type="checkbox" name="dzx" value="小"> 小</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最数 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>最数（最小 / 中间 / 最大）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>最小数</strong></span>
+        <div class="digits" id="zuixiao"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>中间数</strong></span>
+        <div class="digits" id="zhongjian"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>最大数</strong></span>
+        <div class="digits" id="zuida"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 两码相关 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>两码和 / 差 / 合差（不定位）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>两码和尾</strong>（任意两位和的尾数）</span>
+        <div class="digits" id="liangma-hewei"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>两码差</strong>（任意两位差的绝对值）</span>
+        <div class="digits" id="liangma-cha"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结果区域 -->
+  <div id="result-area" class="hidden">
+    <div class="result-box">
+      <div class="tabs">
+        <div class="tab active" data-tab="zhixuan" onclick="switchTab(this)">单选</div>
+        <div class="tab" data-tab="zuxuan" onclick="switchTab(this)">组选</div>
+      </div>
+      <div id="tab-zhixuan">
+        <h3>单选结果 <span id="zx-count" style="font-weight:normal;font-size:13px;color:var(--tg-hint)"></span></h3>
+        <div class="result-nums" id="zx-nums"></div>
+        <div class="result-actions">
+          <button onclick="copyResult('zx')">复制结果</button>
+        </div>
+      </div>
+      <div id="tab-zuxuan" class="hidden">
+        <h3>组选结果 <span id="zu-count" style="font-weight:normal;font-size:13px;color:var(--tg-hint)"></span></h3>
+        <div class="result-nums" id="zu-nums"></div>
+        <div class="result-actions">
+          <button onclick="copyResult('zu')">复制结果</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="resetAll()">重设</button>
+    <button class="btn btn-primary" onclick="doFilter()">提交缩水</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+      document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+      document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
+      document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+      document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+      document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f0f0f0');
+    }
+
+    // 工具函数
+    function pad(n) { return String(n).padStart(3, '0'); }
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 1800);
+    }
+    function toggleSection(el) {
+      el.classList.toggle('collapsed');
+      el.nextElementSibling.classList.toggle('hidden');
+    }
+    function switchTab(el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      const tab = el.dataset.tab;
+      document.getElementById('tab-zhixuan').classList.toggle('hidden', tab !== 'zhixuan');
+      document.getElementById('tab-zuxuan').classList.toggle('hidden', tab !== 'zuxuan');
+    }
+
+    // 固定输出：不换行 + 逗号隔开
+    function formatList(list) {
+      return list.join(',');
+    }
+
+    // 创建数字选择器
+    function createDigits(containerId, max = 9, multi = true) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = '';
+      for (let i = 0; i <= max; i++) {
+        const d = document.createElement('div');
+        d.className = 'digit';
+        d.textContent = i;
+        d.dataset.val = i;
+        d.onclick = function() {
+          if (multi) this.classList.toggle('selected');
+          else {
+            el.querySelectorAll('.digit').forEach(x => x.classList.remove('selected'));
+            this.classList.add('selected');
+          }
+        };
+        el.appendChild(d);
+      }
+    }
+
+    function getSelected(containerId) {
+      return [...document.querySelectorAll(`#${containerId} .digit.selected`)].map(d => +d.dataset.val);
+    }
+
+    function getChecked(name) {
+      return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(c => c.value);
+    }
+
+    // 初始化所有数字选择器
+    ['pos-bai', 'pos-shi', 'pos-ge', 'hezhi-wei', 'kuadu', 'zuixiao', 'zhongjian', 'zuida', 'liangma-hewei', 'liangma-cha', 'lu012'].forEach(id => createDigits(id));
+    createDigits('hezhi', 27);
+
+    // 胆组管理
+    let danGroupCount = 0;
+    function addDanGroup() {
+      danGroupCount++;
+      const wrap = document.getElementById('dan-groups');
+      const div = document.createElement('div');
+      div.className = 'dan-group';
+      div.id = `dan-group-${danGroupCount}`;
+      div.innerHTML = `
+        <div class="group-header">
+          <span>胆组 ${danGroupCount}</span>
+          <button onclick="this.closest('.dan-group').remove()" style="border:none;background:#e74c3c;color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;">删除</button>
+        </div>
+        <div class="digits" id="dan-digits-${danGroupCount}"></div>
+        <div class="flex-row" style="margin-top:8px;">
+          <span class="label" style="margin:0;">出现次数：</span>
+          <select id="dan-count-${danGroupCount}">
+            <option value="1">至少1个</option>
+            <option value="2">至少2个</option>
+            <option value="3">至少3个</option>
+          </select>
+        </div>
+      `;
+      wrap.appendChild(div);
+      createDigits(`dan-digits-${danGroupCount}`);
+    }
+    addDanGroup(); // 默认一个
+
+    // 号码属性计算
+    function analyze(num) {
+      const s = pad(num);
+      const a = +s[0], b = +s[1], c = +s[2];
+      const arr = [a, b, c];
+      const sorted = [...arr].sort((x, y) => x - y);
+      const he = a + b + c;
+      const kd = sorted[2] - sorted[0];
+      const unique = new Set(arr).size;
+
+      // 连号检测
+      let lian = 0;
+      const sortedU = [...new Set(arr)].sort((x, y) => x - y);
+      if (sortedU.length === 3) {
+        if (sortedU[2] - sortedU[0] === 2 && sortedU[1] - sortedU[0] === 1) lian = 3;
+        else if (sortedU[1] - sortedU[0] === 1 || sortedU[2] - sortedU[1] === 1) lian = 2;
+      } else if (sortedU.length === 2) {
+        if (Math.abs(sortedU[1] - sortedU[0]) === 1) lian = 2;
+      }
+
+      // 成对
+      let dui = unique === 1 ? 2 : (unique === 2 ? 1 : 0);
+
+      // 大小
+      const isDa = n => n >= 5;
+      const dxCount = arr.filter(isDa).length;
+
+      // 单双
+      const isDan = n => n % 2 === 1;
+      const dsCount = arr.filter(isDan).length;
+
+      // 质合
+      const isZhi = n => [1,2,3,5,7].includes(n);
+      const zhCount = arr.filter(isZhi).length;
+
+      // 012路
+      const lu = arr.map(n => n % 3);
+
+      // 大中小
+      const dzx = arr.map(n => n >= 7 ? '大' : (n >= 3 ? '中' : '小'));
+
+      // 两码和尾 & 差
+      const pairs = [[a,b],[a,c],[b,c]];
+      const hewei = pairs.map(([x,y]) => (x + y) % 10);
+      const cha = pairs.map(([x,y]) => Math.abs(x - y));
+
+      return {
+        str: s, a, b, c, arr, sorted,
+        he, hewei: he % 10, kd,
+        min: sorted[0], mid: sorted[1], max: sorted[2],
+        unique, lian, dui,
+        dxCount, dsCount, zhCount,
+        lu, dzx, heweiList: hewei, chaList: cha
+      };
+    }
+
+    // 核心过滤
+    function doFilter() {
+      // 收集条件
+      const posBai = getSelected('pos-bai');
+      const posShi = getSelected('pos-shi');
+      const posGe = getSelected('pos-ge');
+
+      const danGroups = [];
+      document.querySelectorAll('.dan-group').forEach(g => {
+        const id = g.id.split('-').pop();
+        const digits = getSelected(`dan-digits-${id}`);
+        const count = +document.getElementById(`dan-count-${id}`).value;
+        if (digits.length) danGroups.push({ digits, count });
+      });
+
+      const hezhiSel = getSelected('hezhi');
+      const heweiSel = getSelected('hezhi-wei');
+      const kuaduSel = getSelected('kuadu');
+      const zuixiaoSel = getSelected('zuixiao');
+      const zhongjianSel = getSelected('zhongjian');
+      const zuidaSel = getSelected('zuida');
+      const lu012Sel = getSelected('lu012');
+      const lu012Count = document.getElementById('lu012-count').value;
+      const lmHewei = getSelected('liangma-hewei');
+      const lmCha = getSelected('liangma-cha');
+
+      const dxSel = getChecked('dx');
+      const dxCount = document.getElementById('dx-count').value;
+      const dsSel = getChecked('ds');
+      const dsCount = document.getElementById('ds-count').value;
+      const zhSel = getChecked('zh');
+      const zhCount = document.getElementById('zh-count').value;
+      const lianSel = getChecked('lianhao').map(Number);
+      const duiSel = getChecked('chengdui').map(Number);
+      const dzxSel = getChecked('dzx');
+
+      const results = [];
+      for (let n = 0; n <= 999; n++) {
+        const info = analyze(n);
+
+        // 定位
+        if (posBai.length && !posBai.includes(info.a)) continue;
+        if (posShi.length && !posShi.includes(info.b)) continue;
+        if (posGe.length && !posGe.includes(info.c)) continue;
+
+        // 胆码
+        let danOk = true;
+        for (const g of danGroups) {
+          const hit = new Set(info.arr.filter(d => g.digits.includes(d))).size;
+          if (hit < g.count) { danOk = false; break; }
+        }
+        if (!danOk) continue;
+
+        // 和值
+        if (hezhiSel.length && !hezhiSel.includes(info.he)) continue;
+        if (heweiSel.length && !heweiSel.includes(info.hewei)) continue;
+        if (kuaduSel.length && !kuaduSel.includes(info.kd)) continue;
+
+        // 最数
+        if (zuixiaoSel.length && !zuixiaoSel.includes(info.min)) continue;
+        if (zhongjianSel.length && !zhongjianSel.includes(info.mid)) continue;
+        if (zuidaSel.length && !zuidaSel.includes(info.max)) continue;
+
+        // 连号
+        if (lianSel.length && !lianSel.includes(info.lian)) continue;
+
+        // 成对
+        if (duiSel.length && !duiSel.includes(info.dui)) continue;
+
+        // 大小
+        if (dxSel.length) {
+          const daCnt = info.dxCount;
+          const xiaoCnt = 3 - daCnt;
+          let match = false;
+          if (dxSel.includes('大') && daCnt > 0) match = true;
+          if (dxSel.includes('小') && xiaoCnt > 0) match = true;
+          if (!match && dxSel.length) continue;
+          if (dxCount !== '' && daCnt !== +dxCount) continue;
+        }
+
+        // 单双
+        if (dsSel.length) {
+          const danCnt = info.dsCount;
+          const shuangCnt = 3 - danCnt;
+          let match = false;
+          if (dsSel.includes('单') && danCnt > 0) match = true;
+          if (dsSel.includes('双') && shuangCnt > 0) match = true;
+          if (!match && dsSel.length) continue;
+          if (dsCount !== '' && danCnt !== +dsCount) continue;
+        }
+
+        // 质合
+        if (zhSel.length) {
+          const zhiCnt = info.zhCount;
+          const heCnt = 3 - zhiCnt;
+          let match = false;
+          if (zhSel.includes('质') && zhiCnt > 0) match = true;
+          if (zhSel.includes('合') && heCnt > 0) match = true;
+          if (!match && zhSel.length) continue;
+          if (zhCount !== '' && zhiCnt !== +zhCount) continue;
+        }
+
+        // 012路
+        if (lu012Sel.length) {
+          const hit = info.lu.filter(l => lu012Sel.includes(l)).length;
+          if (hit === 0) continue;
+          if (lu012Count !== '' && hit !== +lu012Count) continue;
+        }
+
+        // 大中小
+        if (dzxSel.length) {
+          if (!info.dzx.some(d => dzxSel.includes(d))) continue;
+        }
+
+        // 两码和尾
+        if (lmHewei.length) {
+          if (!info.heweiList.some(h => lmHewei.includes(h))) continue;
+        }
+
+        // 两码差
+        if (lmCha.length) {
+          if (!info.chaList.some(c => lmCha.includes(c))) continue;
+        }
+
+        results.push(info);
+      }
+
+      // 输出
+      const zxList = results.map(r => r.str);
+      // 组选：去重（排序后）
+      const zuMap = new Map();
+      results.forEach(r => {
+        const key = r.sorted.join('');
+        if (!zuMap.has(key)) zuMap.set(key, r.str);
+      });
+      const zuList = [...zuMap.values()];
+
+      document.getElementById('zx-nums').textContent = formatList(zxList);
+      document.getElementById('zu-nums').textContent = formatList(zuList);
+      document.getElementById('zx-count').textContent = `共 ${zxList.length} 注`;
+      document.getElementById('zu-count').textContent = `共 ${zuList.length} 注`;
+      document.getElementById('result-area').classList.remove('hidden');
+      document.getElementById('result-area').scrollIntoView({ behavior: 'smooth' });
+
+      toast(`筛选完成：单选 ${zxList.length} 注，组选 ${zuList.length} 注`);
+      if (tg) tg.HapticFeedback?.notificationOccurred('success');
+    }
+
+    function resetAll() {
+      document.querySelectorAll('.digit.selected').forEach(d => d.classList.remove('selected'));
+      document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+      document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+      document.getElementById('dan-groups').innerHTML = '';
+      danGroupCount = 0;
+      addDanGroup();
+      document.getElementById('result-area').classList.add('hidden');
+      toast('已重置所有条件');
+    }
+
+    function copyResult(type) {
+      const text = document.getElementById(type === 'zx' ? 'zx-nums' : 'zu-nums').textContent;
+      if (!text) return toast('无结果可复制');
+      navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板')).catch(() => {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('已复制到剪贴板');
+      });
+    }
+
+    function shareResult(type) {
+      const text = document.getElementById(type === 'zx' ? 'zx-nums' : 'zu-nums').textContent;
+      const count = type === 'zx' ? document.getElementById('zx-count').textContent : document.getElementById('zu-count').textContent;
+      const msg = `福彩3D缩水结果（${type === 'zx' ? '直选' : '组选'}）${count}\n\n${text}`;
+      if (tg) {
+        tg.sendData?.(JSON.stringify({ type, count, numbers: text }));
+        // 也可以用分享链接
+        toast('已通过 Bot 发送数据');
+      } else {
+        copyResult(type);
+      }
+    }
+  </script>
+</body>
+</html>
