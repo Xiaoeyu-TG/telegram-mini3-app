@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>福彩3D在线缩水工具</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --tg-bg: var(--tg-theme-bg-color, #ffffff);
+      --tg-text: var(--tg-theme-text-color, #000000);
+      --tg-hint: var(--tg-theme-hint-color, #999999);
+      --tg-button: var(--tg-theme-button-color, #2481cc);
+      --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+      --tg-secondary: var(--tg-theme-secondary-bg-color, #f4f6f8);
+      --tag: #f0f0f0;
+      --tag-on: #2481cc;
+      --tag-on-text: #fff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--tg-bg);
+      color: var(--tg-text);
+      font-size: 13px;
+      line-height: 1.4;
+      padding-bottom: 76px;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a5276, #2980b9);
+      color: #fff;
+      padding: 12px 14px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 17px; font-weight: 600; }
+    .header p { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+    .section {
+      margin: 8px 10px;
+      background: var(--tg-secondary);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .section-title {
+      background: rgba(0,0,0,0.04);
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-title .arrow { transition: transform 0.2s; font-size: 11px; color: #888; }
+    .section-title.collapsed .arrow { transform: rotate(-90deg); }
+    .section-body { padding: 10px 12px 12px; }
+    .section-body.hidden { display: none; }
+
+    .row { margin-bottom: 12px; }
+    .row:last-child { margin-bottom: 0; }
+    .label {
+      font-size: 12px;
+      color: var(--tg-hint);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .label strong { color: var(--tg-text); font-size: 13px; }
+
+    /* 数字球 */
+    .digits { display: flex; flex-wrap: wrap; gap: 6px; }
+    .digit {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1.5px solid #ccc; background: #fff; color: #333;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 14px; cursor: pointer; user-select: none;
+      transition: all 0.12s;
+    }
+    .digit.selected {
+      background: var(--tg-button); border-color: var(--tg-button); color: #fff;
+    }
+
+    /* 标签按钮（全选、3大数、大大大 等） */
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      padding: 5px 10px; border-radius: 6px;
+      border: 1px solid #d0d0d0; background: #fff; color: #333;
+      font-size: 12px; cursor: pointer; user-select: none;
+      transition: all 0.12s; white-space: nowrap;
+    }
+    .tag.selected, .tag.active {
+      background: var(--tag-on); border-color: var(--tag-on); color: var(--tag-on-text);
+    }
+    .tag.quick { background: #eef3f8; border-color: #c5d5e8; }
+
+    /* 胆组 */
+    .dan-group {
+      border: 1px solid #e0e0e0; border-radius: 8px;
+      padding: 10px; margin-bottom: 10px; background: #fff;
+    }
+    .dan-group .gh {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px; font-size: 13px; font-weight: 600;
+    }
+    .dan-mode {
+      display: flex; gap: 6px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .dan-mode .label { margin: 0; margin-right: 4px; }
+    .appear-digits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .appear-digits .digit { width: 28px; height: 28px; font-size: 13px; border-radius: 6px; }
+
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .hint { font-size: 11px; color: var(--tg-hint); margin-top: 4px; line-height: 1.5; }
+
+    .btn-row {
+      display: flex; gap: 10px; padding: 10px 12px;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--tg-bg); border-top: 1px solid #e0e0e0; z-index: 99;
+    }
+    .btn {
+      flex: 1; padding: 11px 0; border: none; border-radius: 8px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+    }
+    .btn-primary { background: var(--tg-button); color: var(--tg-button-text); }
+    .btn-secondary { background: #95a5a6; color: #fff; }
+
+    .result-box {
+      margin: 10px; background: var(--tg-secondary);
+      border-radius: 10px; padding: 12px;
+    }
+    .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 10px; }
+    .tab {
+      flex: 1; text-align: center; padding: 8px;
+      font-weight: 600; cursor: pointer; color: var(--tg-hint);
+    }
+    .tab.active {
+      color: var(--tg-button);
+      border-bottom: 2px solid var(--tg-button); margin-bottom: -2px;
+    }
+    .result-nums {
+      max-height: 260px; overflow-y: auto; word-break: break-all;
+      font-family: "Courier New", monospace; font-size: 13px; line-height: 1.6;
+      background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #e0e0e0;
+    }
+    .result-actions { margin-top: 8px; }
+    .result-actions button {
+      padding: 6px 14px; border: 1px solid #ccc; border-radius: 6px;
+      background: #fff; font-size: 12px; cursor: pointer;
+    }
+    .hidden { display: none !important; }
+    .toast {
+      position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px;
+      border-radius: 20px; font-size: 13px; z-index: 999;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .sub-label {
+      font-size: 12px; color: #666; margin: 8px 0 4px; font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>福彩3D 在线缩水</h1>
+    <p>定位 · 胆码 · 大小单双 · 和值跨度 · 连号成对</p>
+  </div>
+
+  <!-- 定位 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>定位（百位 / 十位 / 个位）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>百位</strong></span>
+        <div class="digits" id="pos-bai"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>十位</strong></span>
+        <div class="digits" id="pos-shi"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>个位</strong></span>
+        <div class="digits" id="pos-ge"></div>
+      </div>
+      <p class="hint">不选表示该位不限制</p>
+    </div>
+  </div>
+
+  <!-- 胆码 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>胆码（不定位必出）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="dan-mode">
+        <span class="label"><strong>一个胆码出现几次：</strong></span>
+        <div class="tag active" id="dan-once" onclick="setDanMode('once')">算一次</div>
+        <div class="tag" id="dan-multi" onclick="setDanMode('multi')">算几次</div>
+      </div>
+      <div id="dan-groups"></div>
+      <button class="btn btn-secondary" style="width:100%;padding:8px;font-size:13px;" onclick="addDanGroup()">+ 添加胆组</button>
+      <p class="hint">胆码：认为必出的数字（不定位）。「出现」选 0/1/2/3 表示该组胆码在一注中出现几个不同数字。</p>
+    </div>
+  </div>
+
+  <!-- 大小 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>大小（56789大 / 01234小）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="sub-label">快捷</div>
+      <div class="tags" id="dx-quick">
+        <div class="tag quick" data-v="all" onclick="toggleTag(this,'dx')">全选</div>
+        <div class="tag quick" data-v="3d" onclick="toggleTag(this,'dx')">3大数</div>
+        <div class="tag quick" data-v="2d1x" onclick="toggleTag(this,'dx')">2大1小</div>
+        <div class="tag quick" data-v="2x1d" onclick="toggleTag(this,'dx')">2小1大</div>
+        <div class="tag quick" data-v="3x" onclick="toggleTag(this,'dx')">3小数</div>
+      </div>
+      <div class="sub-label">形态（百十个）</div>
+      <div class="tags" id="dx-shape">
+        <div class="tag" data-v="大大大" onclick="toggleTag(this,'dx')">大大大</div>
+        <div class="tag" data-v="大大小" onclick="toggleTag(this,'dx')">大大小</div>
+        <div class="tag" data-v="大小大" onclick="toggleTag(this,'dx')">大小大</div>
+        <div class="tag" data-v="大小小" onclick="toggleTag(this,'dx')">大小小</div>
+        <div class="tag" data-v="小大大" onclick="toggleTag(this,'dx')">小大大</div>
+        <div class="tag" data-v="小大小" onclick="toggleTag(this,'dx')">小大小</div>
+        <div class="tag" data-v="小小大" onclick="toggleTag(this,'dx')">小小大</div>
+        <div class="tag" data-v="小小小" onclick="toggleTag(this,'dx')">小小小</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 单双 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>单双（13579单 / 02468双）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="sub-label">快捷</div>
+      <div class="tags" id="ds-quick">
+        <div class="tag quick" data-v="all" onclick="toggleTag(this,'ds')">全选</div>
+        <div class="tag quick" data-v="3d" onclick="toggleTag(this,'ds')">3单</div>
+        <div class="tag quick" data-v="2d1s" onclick="toggleTag(this,'ds')">2单1双</div>
+        <div class="tag quick" data-v="2s1d" onclick="toggleTag(this,'ds')">2双1单</div>
+        <div class="tag quick" data-v="3s" onclick="toggleTag(this,'ds')">3双</div>
+      </div>
+      <div class="sub-label">形态（百十个）</div>
+      <div class="tags" id="ds-shape">
+        <div class="tag" data-v="单单单" onclick="toggleTag(this,'ds')">单单单</div>
+        <div class="tag" data-v="单单双" onclick="toggleTag(this,'ds')">单单双</div>
+        <div class="tag" data-v="单双单" onclick="toggleTag(this,'ds')">单双单</div>
+        <div class="tag" data-v="单双双" onclick="toggleTag(this,'ds')">单双双</div>
+        <div class="tag" data-v="双单单" onclick="toggleTag(this,'ds')">双单单</div>
+        <div class="tag" data-v="双单双" onclick="toggleTag(this,'ds')">双单双</div>
+        <div class="tag" data-v="双双单" onclick="toggleTag(this,'ds')">双双单</div>
+        <div class="tag" data-v="双双双" onclick="toggleTag(this,'ds')">双双双</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 质合 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>质合（12357质 / 04689合）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="sub-label">快捷</div>
+      <div class="tags" id="zh-quick">
+        <div class="tag quick" data-v="all" onclick="toggleTag(this,'zh')">全选</div>
+        <div class="tag quick" data-v="3z" onclick="toggleTag(this,'zh')">3质数</div>
+        <div class="tag quick" data-v="2z1h" onclick="toggleTag(this,'zh')">2质1合</div>
+        <div class="tag quick" data-v="2h1z" onclick="toggleTag(this,'zh')">2合1质</div>
+        <div class="tag quick" data-v="3h" onclick="toggleTag(this,'zh')">3合数</div>
+      </div>
+      <div class="sub-label">形态（百十个）</div>
+      <div class="tags" id="zh-shape">
+        <div class="tag" data-v="质质质" onclick="toggleTag(this,'zh')">质质质</div>
+        <div class="tag" data-v="质质合" onclick="toggleTag(this,'zh')">质质合</div>
+        <div class="tag" data-v="质合质" onclick="toggleTag(this,'zh')">质合质</div>
+        <div class="tag" data-v="质合合" onclick="toggleTag(this,'zh')">质合合</div>
+        <div class="tag" data-v="合质质" onclick="toggleTag(this,'zh')">合质质</div>
+        <div class="tag" data-v="合质合" onclick="toggleTag(this,'zh')">合质合</div>
+        <div class="tag" data-v="合合质" onclick="toggleTag(this,'zh')">合合质</div>
+        <div class="tag" data-v="合合合" onclick="toggleTag(this,'zh')">合合合</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 和值 · 和尾 · 跨度 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>和值 · 和值尾 · 跨距</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>和值</strong>（0～27）</span>
+        <div class="tags" style="margin-bottom:8px;">
+          <div class="tag quick" onclick="selectAllDigits('hezhi',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('hezhi',false)">清除</div>
+          <div class="tag quick" onclick="selectHezhiPreset('da')">全大</div>
+          <div class="tag quick" onclick="selectHezhiPreset('xiao')">全小</div>
+          <div class="tag quick" onclick="selectHezhiPreset('dan')">全单</div>
+          <div class="tag quick" onclick="selectHezhiPreset('shuang')">全双</div>
+          <div class="tag quick" onclick="selectHezhiPreset('lu0')">0路</div>
+          <div class="tag quick" onclick="selectHezhiPreset('lu1')">1路</div>
+          <div class="tag quick" onclick="selectHezhiPreset('lu2')">2路</div>
+        </div>
+        <div class="digits" id="hezhi"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>和值尾</strong>（0～9）</span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('hezhi-wei',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('hezhi-wei',false)">清除</div>
+        </div>
+        <div class="digits" id="hezhi-wei"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>跨距</strong>（最大-最小，0～9）</span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('kuadu',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('kuadu',false)">清除</div>
+        </div>
+        <div class="digits" id="kuadu"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 连号 · 成对 -->
+  <div class="section">
+    <div class="section-title" onclick="toggleSection(this)">
+      <span>连号 · 成对</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="row">
+        <span class="label"><strong>连号</strong></span>
+        <div class="tags" id="lianhao-tags">
+          <div class="tag" data-v="0" onclick="toggleTag(this,'lh')">没有</div>
+          <div class="tag" data-v="2" onclick="toggleTag(this,'lh')">二连</div>
+          <div class="tag" data-v="3" onclick="toggleTag(this,'lh')">三连</div>
+        </div>
+        <p class="hint">不考虑顺序，如 89、01 为二连；890、012 为三连</p>
+      </div>
+      <div class="row">
+        <span class="label"><strong>成对</strong></span>
+        <div class="tags" id="chengdui-tags">
+          <div class="tag" data-v="0" onclick="toggleTag(this,'cd')">没有对</div>
+          <div class="tag" data-v="1" onclick="toggleTag(this,'cd')">有对(组三)</div>
+          <div class="tag" data-v="2" onclick="toggleTag(this,'cd')">三个一样(豹子)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 大中小 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>大中小（789大 / 3456中 / 012小）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="sub-label">快捷组合</div>
+      <div class="tags" id="dzx-quick">
+        <div class="tag quick" data-v="3d" onclick="toggleTag(this,'dzx')">3大数</div>
+        <div class="tag quick" data-v="2d1z" onclick="toggleTag(this,'dzx')">2大1中</div>
+        <div class="tag quick" data-v="2d1x" onclick="toggleTag(this,'dzx')">2大1小</div>
+        <div class="tag quick" data-v="1d2z" onclick="toggleTag(this,'dzx')">1大2中</div>
+        <div class="tag quick" data-v="1d1z1x" onclick="toggleTag(this,'dzx')">1大1中1小</div>
+        <div class="tag quick" data-v="1d2x" onclick="toggleTag(this,'dzx')">1大2小</div>
+        <div class="tag quick" data-v="3z" onclick="toggleTag(this,'dzx')">3中数</div>
+        <div class="tag quick" data-v="2z1x" onclick="toggleTag(this,'dzx')">2中1小</div>
+        <div class="tag quick" data-v="1z2x" onclick="toggleTag(this,'dzx')">1中2小</div>
+        <div class="tag quick" data-v="3x" onclick="toggleTag(this,'dzx')">3小数</div>
+      </div>
+      <div class="sub-label">形态（百十个）</div>
+      <div class="tags" id="dzx-shape">
+        <div class="tag" data-v="大大大" onclick="toggleTag(this,'dzx')">大大大</div>
+        <div class="tag" data-v="大大中" onclick="toggleTag(this,'dzx')">大大中</div>
+        <div class="tag" data-v="大大小" onclick="toggleTag(this,'dzx')">大大小</div>
+        <div class="tag" data-v="大中大" onclick="toggleTag(this,'dzx')">大中大</div>
+        <div class="tag" data-v="大中中" onclick="toggleTag(this,'dzx')">大中中</div>
+        <div class="tag" data-v="大中小" onclick="toggleTag(this,'dzx')">大中小</div>
+        <div class="tag" data-v="大小大" onclick="toggleTag(this,'dzx')">大小大</div>
+        <div class="tag" data-v="大小中" onclick="toggleTag(this,'dzx')">大小中</div>
+        <div class="tag" data-v="大小小" onclick="toggleTag(this,'dzx')">大小小</div>
+        <div class="tag" data-v="中大大" onclick="toggleTag(this,'dzx')">中大大</div>
+        <div class="tag" data-v="中大中" onclick="toggleTag(this,'dzx')">中大中</div>
+        <div class="tag" data-v="中大小" onclick="toggleTag(this,'dzx')">中大小</div>
+        <div class="tag" data-v="中中大" onclick="toggleTag(this,'dzx')">中中大</div>
+        <div class="tag" data-v="中中中" onclick="toggleTag(this,'dzx')">中中中</div>
+        <div class="tag" data-v="中中小" onclick="toggleTag(this,'dzx')">中中小</div>
+        <div class="tag" data-v="中小大" onclick="toggleTag(this,'dzx')">中小大</div>
+        <div class="tag" data-v="中小中" onclick="toggleTag(this,'dzx')">中小中</div>
+        <div class="tag" data-v="中小小" onclick="toggleTag(this,'dzx')">中小小</div>
+        <div class="tag" data-v="小大大" onclick="toggleTag(this,'dzx')">小大大</div>
+        <div class="tag" data-v="小大中" onclick="toggleTag(this,'dzx')">小大中</div>
+        <div class="tag" data-v="小大小" onclick="toggleTag(this,'dzx')">小大小</div>
+        <div class="tag" data-v="小中大" onclick="toggleTag(this,'dzx')">小中大</div>
+        <div class="tag" data-v="小中中" onclick="toggleTag(this,'dzx')">小中中</div>
+        <div class="tag" data-v="小中小" onclick="toggleTag(this,'dzx')">小中小</div>
+        <div class="tag" data-v="小小大" onclick="toggleTag(this,'dzx')">小小大</div>
+        <div class="tag" data-v="小小中" onclick="toggleTag(this,'dzx')">小小中</div>
+        <div class="tag" data-v="小小小" onclick="toggleTag(this,'dzx')">小小小</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最数 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>最数（最小 / 中间 / 最大）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>最小数</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('zuixiao',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('zuixiao',false)">清除</div>
+        </div>
+        <div class="digits" id="zuixiao"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>中间数</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('zhongjian',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('zhongjian',false)">清除</div>
+        </div>
+        <div class="digits" id="zhongjian"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>最大数</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('zuida',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('zuida',false)">清除</div>
+        </div>
+        <div class="digits" id="zuida"></div>
+      </div>
+      <p class="hint">最小数：奖号中最小的数字；中间数：第二大；最大数：最大。组三时最大=中间或最小=中间；豹子三者相同。</p>
+    </div>
+  </div>
+
+  <!-- 012路 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>012路（余0:0369 / 余1:147 / 余2:258）</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="sub-label">组选形态（排序后）</div>
+      <div class="tags" id="lu012-zu" style="margin-bottom:8px;"></div>
+      <div class="sub-label">直选形态（百十个）</div>
+      <div class="tags" id="lu012-zhi"></div>
+      <p class="hint">0到9被3除：余0为0369，余1为147，余2为258。点击选择路数组合。</p>
+    </div>
+  </div>
+
+  <!-- 两码和尾 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>两码和尾</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>不定位</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-b',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-b',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hw-b"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、十</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-bs',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-bs',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hw-bs"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-bg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-bg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hw-bg"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>十、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-sg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hw-sg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hw-sg"></div>
+      </div>
+      <p class="hint">不定位：任意两位数字相加的尾数；百十/百个/十个：指定两位的和尾。</p>
+    </div>
+  </div>
+
+  <!-- 两码差 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>两码差</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>不定位</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-b',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-b',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-cha-b"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、十</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-bs',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-bs',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-cha-bs"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-bg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-bg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-cha-bg"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>十、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-sg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-cha-sg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-cha-sg"></div>
+      </div>
+      <p class="hint">不定位：任意两位差的绝对值；百十/百个/十个：指定两位的差。</p>
+    </div>
+  </div>
+
+  <!-- 两码合差 -->
+  <div class="section">
+    <div class="section-title collapsed" onclick="toggleSection(this)">
+      <span>两码合差</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="section-body hidden">
+      <div class="row">
+        <span class="label"><strong>不定位</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-b',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-b',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hc-b"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、十</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-bs',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-bs',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hc-bs"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>百、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-bg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-bg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hc-bg"></div>
+      </div>
+      <div class="row">
+        <span class="label"><strong>十、个</strong></span>
+        <div class="tags" style="margin-bottom:6px;">
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-sg',true)">全选</div>
+          <div class="tag quick" onclick="selectAllDigits('lm-hc-sg',false)">清除</div>
+        </div>
+        <div class="digits" id="lm-hc-sg"></div>
+      </div>
+      <p class="hint">合差：任意两位之间的加减（和或差），任一匹配即入选。</p>
+    </div>
+  </div>
+
+  <!-- 结果 -->
+  <div id="result-area" class="hidden">
+    <div class="result-box">
+      <div class="tabs">
+        <div class="tab active" data-tab="zhixuan" onclick="switchTab(this)">单选</div>
+        <div class="tab" data-tab="zuxuan" onclick="switchTab(this)">组选</div>
+      </div>
+      <div id="tab-zhixuan">
+        <div style="margin-bottom:6px;font-weight:600;">单选结果 <span id="zx-count" style="font-weight:normal;color:var(--tg-hint)"></span></div>
+        <div class="result-nums" id="zx-nums"></div>
+        <div class="result-actions"><button onclick="copyResult('zx')">复制结果</button></div>
+      </div>
+      <div id="tab-zuxuan" class="hidden">
+        <div style="margin-bottom:6px;font-weight:600;">组选结果 <span id="zu-count" style="font-weight:normal;color:var(--tg-hint)"></span></div>
+        <div class="result-nums" id="zu-nums"></div>
+        <div class="result-actions"><button onclick="copyResult('zu')">复制结果</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="resetAll()">重设条件</button>
+    <button class="btn btn-primary" onclick="doFilter()">提交</button>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready(); tg.expand();
+  const p = tg.themeParams || {};
+  if (p.bg_color) document.documentElement.style.setProperty('--tg-theme-bg-color', p.bg_color);
+  if (p.text_color) document.documentElement.style.setProperty('--tg-theme-text-color', p.text_color);
+  if (p.hint_color) document.documentElement.style.setProperty('--tg-theme-hint-color', p.hint_color);
+  if (p.button_color) document.documentElement.style.setProperty('--tg-theme-button-color', p.button_color);
+  if (p.button_text_color) document.documentElement.style.setProperty('--tg-theme-button-text-color', p.button_text_color);
+  if (p.secondary_bg_color) document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', p.secondary_bg_color);
+}
+
+function pad(n) { return String(n).padStart(3, '0'); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1800);
+}
+function toggleSection(el) {
+  el.classList.toggle('collapsed');
+  el.nextElementSibling.classList.toggle('hidden');
+}
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const tab = el.dataset.tab;
+  document.getElementById('tab-zhixuan').classList.toggle('hidden', tab !== 'zhixuan');
+  document.getElementById('tab-zuxuan').classList.toggle('hidden', tab !== 'zuxuan');
+}
+
+function createDigits(id, max = 9) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  for (let i = 0; i <= max; i++) {
+    const d = document.createElement('div');
+    d.className = 'digit';
+    d.textContent = i;
+    d.dataset.val = i;
+    d.onclick = function() { this.classList.toggle('selected'); };
+    el.appendChild(d);
+  }
+}
+function getSelected(id) {
+  return [...document.querySelectorAll(`#${id} .digit.selected`)].map(d => +d.dataset.val);
+}
+function selectAllDigits(id, on) {
+  document.querySelectorAll(`#${id} .digit`).forEach(d => d.classList.toggle('selected', on));
+}
+function selectHezhiPreset(type) {
+  const el = document.getElementById('hezhi');
+  el.querySelectorAll('.digit').forEach(d => {
+    const v = +d.dataset.val;
+    let ok = false;
+    if (type === 'da') ok = v >= 14;
+    else if (type === 'xiao') ok = v <= 13;
+    else if (type === 'dan') ok = v % 2 === 1;
+    else if (type === 'shuang') ok = v % 2 === 0;
+    else if (type === 'lu0') ok = v % 3 === 0;
+    else if (type === 'lu1') ok = v % 3 === 1;
+    else if (type === 'lu2') ok = v % 3 === 2;
+    d.classList.toggle('selected', ok);
+  });
+}
+
+// 标签多选
+function toggleTag(el, group) {
+  el.classList.toggle('selected');
+  // 全选特殊处理：选中全选时选中同组所有形态
+  if (el.dataset.v === 'all' && el.classList.contains('selected')) {
+    const parent = el.closest('.section-body');
+    parent.querySelectorAll('.tag[data-v]').forEach(t => {
+      if (t.dataset.v !== 'all') t.classList.add('selected');
+    });
+  }
+  if (el.dataset.v === 'all' && !el.classList.contains('selected')) {
+    const parent = el.closest('.section-body');
+    parent.querySelectorAll('.tag.selected').forEach(t => t.classList.remove('selected'));
+  }
+}
+function getSelectedTags(containerSelector) {
+  return [...document.querySelectorAll(`${containerSelector} .tag.selected`)].map(t => t.dataset.v).filter(v => v && v !== 'all');
+}
+
+// 胆码
+let danMode = 'once'; // once | multi
+let danGroupCount = 0;
+function setDanMode(mode) {
+  danMode = mode;
+  document.getElementById('dan-once').classList.toggle('active', mode === 'once');
+  document.getElementById('dan-multi').classList.toggle('active', mode === 'multi');
+}
+function addDanGroup() {
+  danGroupCount++;
+  const wrap = document.getElementById('dan-groups');
+  const div = document.createElement('div');
+  div.className = 'dan-group';
+  div.id = `dan-group-${danGroupCount}`;
+  div.innerHTML = `
+    <div class="gh">
+      <span>胆组${['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫'][danGroupCount-1] || danGroupCount}</span>
+      <button onclick="this.closest('.dan-group').remove()" style="border:none;background:#e74c3c;color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;">删除</button>
+    </div>
+    <div class="digits" id="dan-digits-${danGroupCount}"></div>
+    <div class="sub-label" style="margin-top:8px;">出现：</div>
+    <div class="appear-digits" id="dan-appear-${danGroupCount}"></div>
+  `;
+  wrap.appendChild(div);
+  createDigits(`dan-digits-${danGroupCount}`);
+  // 出现 0/1/2/3
+  const app = document.getElementById(`dan-appear-${danGroupCount}`);
+  [0,1,2,3].forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'digit';
+    d.textContent = n;
+    d.dataset.val = n;
+    d.onclick = function() { this.classList.toggle('selected'); };
+    app.appendChild(d);
+  });
+}
+addDanGroup();
+
+['pos-bai','pos-shi','pos-ge','hezhi-wei','kuadu','zuixiao','zhongjian','zuida',
+ 'lm-hw-b','lm-hw-bs','lm-hw-bg','lm-hw-sg',
+ 'lm-cha-b','lm-cha-bs','lm-cha-bg','lm-cha-sg',
+ 'lm-hc-b','lm-hc-bs','lm-hc-bg','lm-hc-sg'
+].forEach(id => createDigits(id));
+createDigits('hezhi', 27);
+
+// 012路标签：组选形态 + 直选形态
+(function initLu012() {
+  // 组选：排序后的组合
+  const zuSet = new Set();
+  for (let a=0;a<=2;a++) for (let b=0;b<=2;b++) for (let c=0;c<=2;c++) {
+    zuSet.add([a,b,c].sort((x,y)=>x-y).join(''));
+  }
+  const zuEl = document.getElementById('lu012-zu');
+  [...zuSet].sort().forEach(s => {
+    const t = document.createElement('div');
+    t.className = 'tag'; t.dataset.v = s; t.textContent = s;
+    t.onclick = function(){ this.classList.toggle('selected'); };
+    zuEl.appendChild(t);
+  });
+  // 直选：全部 000~222
+  const zhiEl = document.getElementById('lu012-zhi');
+  for (let a=0;a<=2;a++) for (let b=0;b<=2;b++) for (let c=0;c<=2;c++) {
+    const s = ''+a+b+c;
+    const t = document.createElement('div');
+    t.className = 'tag'; t.dataset.v = s; t.textContent = s;
+    t.onclick = function(){ this.classList.toggle('selected'); };
+    zhiEl.appendChild(t);
+  }
+})();
+
+function isDa(n) { return n >= 5; }
+function isDan(n) { return n % 2 === 1; }
+function isZhi(n) { return [1,2,3,5,7].includes(n); }
+function dzxOf(n) { return n >= 7 ? '大' : (n >= 3 ? '中' : '小'); }
+
+function analyze(num) {
+  const s = pad(num);
+  const a = +s[0], b = +s[1], c = +s[2];
+  const arr = [a, b, c];
+  const sorted = [...arr].sort((x,y) => x - y);
+  const he = a + b + c;
+  const kd = sorted[2] - sorted[0];
+  const unique = new Set(arr).size;
+
+  // 连号
+  let lian = 0;
+  const u = [...new Set(arr)].sort((x,y) => x - y);
+  if (u.length === 3) {
+    if (u[2]-u[0]===2 && u[1]-u[0]===1) lian = 3;
+    else if (u[1]-u[0]===1 || u[2]-u[1]===1) lian = 2;
+  } else if (u.length === 2 && Math.abs(u[1]-u[0])===1) lian = 2;
+
+  const dui = unique === 1 ? 2 : (unique === 2 ? 1 : 0);
+  const dxShape = arr.map(n => isDa(n) ? '大' : '小').join('');
+  const dsShape = arr.map(n => isDan(n) ? '单' : '双').join('');
+  const zhShape = arr.map(n => isZhi(n) ? '质' : '合').join('');
+  const dzxShape = arr.map(dzxOf).join('');
+  const daCnt = arr.filter(isDa).length;
+  const danCnt = arr.filter(isDan).length;
+  const zhiCnt = arr.filter(isZhi).length;
+  const dCnt = arr.filter(n => n>=7).length;
+  const zCnt = arr.filter(n => n>=3 && n<=6).length;
+  const xCnt = arr.filter(n => n<=2).length;
+
+  const hwBS = (a+b)%10, hwBG = (a+c)%10, hwSG = (b+c)%10;
+  const chaBS = Math.abs(a-b), chaBG = Math.abs(a-c), chaSG = Math.abs(b-c);
+  const heweiList = [hwBS, hwBG, hwSG];
+  const chaList = [chaBS, chaBG, chaSG];
+  // 合差 = 和尾 或 差
+  const hcList = [...new Set([...heweiList, ...chaList])];
+  const hcBS = [...new Set([hwBS, chaBS])];
+  const hcBG = [...new Set([hwBG, chaBG])];
+  const hcSG = [...new Set([hwSG, chaSG])];
+  const lu = arr.map(n => n%3);
+  const luStr = lu.join('');
+  const luZu = [...lu].sort((x,y)=>x-y).join('');
+
+  return {
+    str: s, a, b, c, arr, sorted, he, hewei: he%10, kd,
+    min: sorted[0], mid: sorted[1], max: sorted[2],
+    unique, lian, dui,
+    dxShape, dsShape, zhShape, dzxShape,
+    daCnt, danCnt, zhiCnt, dCnt, zCnt, xCnt,
+    lu, luStr, luZu,
+    heweiList, chaList, hcList,
+    hwBS, hwBG, hwSG, chaBS, chaBG, chaSG,
+    hcBS, hcBG, hcSG
+  };
+}
+
+function matchQuickDx(info, tags) {
+  // tags 含 3d, 2d1x, 2x1d, 3x 或形态
+  if (!tags.length) return true;
+  const shapes = tags.filter(t => t.length === 3 && /[大小]/.test(t));
+  const quicks = tags.filter(t => !shapes.includes(t));
+  let ok = false;
+  if (shapes.length && shapes.includes(info.dxShape)) ok = true;
+  if (quicks.includes('3d') && info.daCnt === 3) ok = true;
+  if (quicks.includes('2d1x') && info.daCnt === 2) ok = true;
+  if (quicks.includes('2x1d') && info.daCnt === 1) ok = true;
+  if (quicks.includes('3x') && info.daCnt === 0) ok = true;
+  return ok;
+}
+function matchQuickDs(info, tags) {
+  if (!tags.length) return true;
+  const shapes = tags.filter(t => t.length === 3 && /[单双]/.test(t));
+  const quicks = tags.filter(t => !shapes.includes(t));
+  let ok = false;
+  if (shapes.length && shapes.includes(info.dsShape)) ok = true;
+  if (quicks.includes('3d') && info.danCnt === 3) ok = true;
+  if (quicks.includes('2d1s') && info.danCnt === 2) ok = true;
+  if (quicks.includes('2s1d') && info.danCnt === 1) ok = true;
+  if (quicks.includes('3s') && info.danCnt === 0) ok = true;
+  return ok;
+}
+function matchQuickZh(info, tags) {
+  if (!tags.length) return true;
+  const shapes = tags.filter(t => t.length === 3 && /[质合]/.test(t));
+  const quicks = tags.filter(t => !shapes.includes(t));
+  let ok = false;
+  if (shapes.length && shapes.includes(info.zhShape)) ok = true;
+  if (quicks.includes('3z') && info.zhiCnt === 3) ok = true;
+  if (quicks.includes('2z1h') && info.zhiCnt === 2) ok = true;
+  if (quicks.includes('2h1z') && info.zhiCnt === 1) ok = true;
+  if (quicks.includes('3h') && info.zhiCnt === 0) ok = true;
+  return ok;
+}
+function matchQuickDzx(info, tags) {
+  if (!tags.length) return true;
+  const shapes = tags.filter(t => t.length === 3 && /[大中小]/.test(t));
+  const quicks = tags.filter(t => !shapes.includes(t));
+  let ok = false;
+  if (shapes.length && shapes.includes(info.dzxShape)) ok = true;
+  if (quicks.includes('3d') && info.dCnt===3) ok = true;
+  if (quicks.includes('2d1z') && info.dCnt===2 && info.zCnt===1) ok = true;
+  if (quicks.includes('2d1x') && info.dCnt===2 && info.xCnt===1) ok = true;
+  if (quicks.includes('1d2z') && info.dCnt===1 && info.zCnt===2) ok = true;
+  if (quicks.includes('1d1z1x') && info.dCnt===1 && info.zCnt===1 && info.xCnt===1) ok = true;
+  if (quicks.includes('1d2x') && info.dCnt===1 && info.xCnt===2) ok = true;
+  if (quicks.includes('3z') && info.zCnt===3) ok = true;
+  if (quicks.includes('2z1x') && info.zCnt===2 && info.xCnt===1) ok = true;
+  if (quicks.includes('1z2x') && info.zCnt===1 && info.xCnt===2) ok = true;
+  if (quicks.includes('3x') && info.xCnt===3) ok = true;
+  return ok;
+}
+
+function doFilter() {
+  const posBai = getSelected('pos-bai');
+  const posShi = getSelected('pos-shi');
+  const posGe = getSelected('pos-ge');
+
+  // 胆组
+  const danGroups = [];
+  document.querySelectorAll('.dan-group').forEach(g => {
+    const id = g.id.split('-').pop();
+    const digits = getSelected(`dan-digits-${id}`);
+    const appears = getSelected(`dan-appear-${id}`);
+    if (digits.length && appears.length) danGroups.push({ digits, appears });
+  });
+
+  const hezhiSel = getSelected('hezhi');
+  const heweiSel = getSelected('hezhi-wei');
+  const kuaduSel = getSelected('kuadu');
+  const zuixiaoSel = getSelected('zuixiao');
+  const zhongjianSel = getSelected('zhongjian');
+  const zuidaSel = getSelected('zuida');
+
+  const luZuTags = getSelectedTags('#lu012-zu');
+  const luZhiTags = getSelectedTags('#lu012-zhi');
+
+  const lmHwB = getSelected('lm-hw-b');
+  const lmHwBS = getSelected('lm-hw-bs');
+  const lmHwBG = getSelected('lm-hw-bg');
+  const lmHwSG = getSelected('lm-hw-sg');
+  const lmChaB = getSelected('lm-cha-b');
+  const lmChaBS = getSelected('lm-cha-bs');
+  const lmChaBG = getSelected('lm-cha-bg');
+  const lmChaSG = getSelected('lm-cha-sg');
+  const lmHcB = getSelected('lm-hc-b');
+  const lmHcBS = getSelected('lm-hc-bs');
+  const lmHcBG = getSelected('lm-hc-bg');
+  const lmHcSG = getSelected('lm-hc-sg');
+
+  const dxTags = [...getSelectedTags('#dx-quick'), ...getSelectedTags('#dx-shape')];
+  const dsTags = [...getSelectedTags('#ds-quick'), ...getSelectedTags('#ds-shape')];
+  const zhTags = [...getSelectedTags('#zh-quick'), ...getSelectedTags('#zh-shape')];
+  const dzxTags = [...getSelectedTags('#dzx-quick'), ...getSelectedTags('#dzx-shape')];
+  const lhTags = getSelectedTags('#lianhao-tags').map(Number);
+  const cdTags = getSelectedTags('#chengdui-tags').map(Number);
+
+  const results = [];
+  for (let n = 0; n <= 999; n++) {
+    const info = analyze(n);
+
+    if (posBai.length && !posBai.includes(info.a)) continue;
+    if (posShi.length && !posShi.includes(info.b)) continue;
+    if (posGe.length && !posGe.includes(info.c)) continue;
+
+    // 胆码
+    let danOk = true;
+    for (const g of danGroups) {
+      let hit;
+      if (danMode === 'once') {
+        // 算一次：同一数字出现多次只算1
+        hit = new Set(info.arr.filter(d => g.digits.includes(d))).size;
+      } else {
+        // 算几次：按出现次数累计
+        hit = info.arr.filter(d => g.digits.includes(d)).length;
+      }
+      if (!g.appears.includes(hit)) { danOk = false; break; }
+    }
+    if (!danOk) continue;
+
+    if (hezhiSel.length && !hezhiSel.includes(info.he)) continue;
+    if (heweiSel.length && !heweiSel.includes(info.hewei)) continue;
+    if (kuaduSel.length && !kuaduSel.includes(info.kd)) continue;
+    if (zuixiaoSel.length && !zuixiaoSel.includes(info.min)) continue;
+    if (zhongjianSel.length && !zhongjianSel.includes(info.mid)) continue;
+    if (zuidaSel.length && !zuidaSel.includes(info.max)) continue;
+    if (lhTags.length && !lhTags.includes(info.lian)) continue;
+    if (cdTags.length && !cdTags.includes(info.dui)) continue;
+    if (!matchQuickDx(info, dxTags)) continue;
+    if (!matchQuickDs(info, dsTags)) continue;
+    if (!matchQuickZh(info, zhTags)) continue;
+    if (!matchQuickDzx(info, dzxTags)) continue;
+
+    // 012路
+    if (luZuTags.length && !luZuTags.includes(info.luZu)) continue;
+    if (luZhiTags.length && !luZhiTags.includes(info.luStr)) continue;
+
+    // 两码和尾
+    if (lmHwB.length && !info.heweiList.some(h => lmHwB.includes(h))) continue;
+    if (lmHwBS.length && !lmHwBS.includes(info.hwBS)) continue;
+    if (lmHwBG.length && !lmHwBG.includes(info.hwBG)) continue;
+    if (lmHwSG.length && !lmHwSG.includes(info.hwSG)) continue;
+
+    // 两码差
+    if (lmChaB.length && !info.chaList.some(c => lmChaB.includes(c))) continue;
+    if (lmChaBS.length && !lmChaBS.includes(info.chaBS)) continue;
+    if (lmChaBG.length && !lmChaBG.includes(info.chaBG)) continue;
+    if (lmChaSG.length && !lmChaSG.includes(info.chaSG)) continue;
+
+    // 两码合差
+    if (lmHcB.length && !info.hcList.some(h => lmHcB.includes(h))) continue;
+    if (lmHcBS.length && !info.hcBS.some(h => lmHcBS.includes(h))) continue;
+    if (lmHcBG.length && !info.hcBG.some(h => lmHcBG.includes(h))) continue;
+    if (lmHcSG.length && !info.hcSG.some(h => lmHcSG.includes(h))) continue;
+
+    results.push(info);
+  }
+
+  const zxList = results.map(r => r.str);
+  const zuMap = new Map();
+  results.forEach(r => {
+    const key = r.sorted.join('');
+    if (!zuMap.has(key)) zuMap.set(key, r.str);
+  });
+  const zuList = [...zuMap.values()];
+
+  document.getElementById('zx-nums').textContent = zxList.join(',');
+  document.getElementById('zu-nums').textContent = zuList.join(',');
+  document.getElementById('zx-count').textContent = `共 ${zxList.length} 注`;
+  document.getElementById('zu-count').textContent = `共 ${zuList.length} 注`;
+  document.getElementById('result-area').classList.remove('hidden');
+  document.getElementById('result-area').scrollIntoView({ behavior: 'smooth' });
+  toast(`筛选完成：单选 ${zxList.length} 注，组选 ${zuList.length} 注`);
+  if (tg) tg.HapticFeedback?.notificationOccurred('success');
+}
+
+function resetAll() {
+  document.querySelectorAll('.digit.selected').forEach(d => d.classList.remove('selected'));
+  document.querySelectorAll('.tag.selected').forEach(t => t.classList.remove('selected'));
+  document.getElementById('dan-groups').innerHTML = '';
+  danGroupCount = 0;
+  addDanGroup();
+  setDanMode('once');
+  document.getElementById('result-area').classList.add('hidden');
+  toast('已重置所有条件');
+}
+
+function copyResult(type) {
+  const text = document.getElementById(type === 'zx' ? 'zx-nums' : 'zu-nums').textContent;
+  if (!text) return toast('无结果可复制');
+  navigator.clipboard.writeText(text).then(() => toast('已复制到剪贴板')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('已复制到剪贴板');
+  });
+}
+</script>
+</body>
+</html>
